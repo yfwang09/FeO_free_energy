@@ -1,1 +1,2 @@
-# FeO_umbrella_sampling
+# Umbrella sampling of iron oxide phase transformation
+
