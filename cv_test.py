@@ -12,12 +12,12 @@ from scipy.special import sph_harm
 # https://next-gen.materialsproject.org/materials/mp-150
 n = 10
 atoms = bulk('Fe', 'fcc', a=3.66, cubic=True) * (n, n, n)
-write('fcc_iron.xyz', atoms)
+write('configurations/fcc_iron.xyz', atoms)
 
 # generate a bcc iron supercell
 # https://next-gen.materialsproject.org/materials/mp-13
 atoms = bulk('Fe', 'bcc', a=2.87, cubic=True) * (n, n, n)
-write('bcc_iron.xyz', atoms)
+write('configurations/bcc_iron.xyz', atoms)
 
 # %%
 # create a neighbor list
