@@ -1,6 +1,7 @@
 # %%
 # Test the collective variable (CV) for bcc and fcc structures
 
+import os
 from ase.build import bulk
 import numpy as np
 from ase.io import write, read
@@ -8,16 +9,24 @@ from ase.neighborlist import NeighborList, natural_cutoffs
 
 from scipy.special import sph_harm
 
+os.makedirs('configurations', exist_ok=True)
+
 # generate a fcc iron supercell
 # https://next-gen.materialsproject.org/materials/mp-150
 n = 10
 atoms = bulk('Fe', 'fcc', a=3.66, cubic=True) * (n, n, n)
-write('configurations/fcc_iron.xyz', atoms)
+fcc_file = 'configurations/fcc_iron.xyz'
+if not os.path.exists(fcc_file):
+    write('configurations/fcc_iron.xyz', atoms)
+    write('configurations/fcc_iron.lmp', atoms, format='lammps-data',)
 
 # generate a bcc iron supercell
 # https://next-gen.materialsproject.org/materials/mp-13
 atoms = bulk('Fe', 'bcc', a=2.87, cubic=True) * (n, n, n)
-write('configurations/bcc_iron.xyz', atoms)
+bcc_file = 'configurations/bcc_iron.xyz'
+if not os.path.exists(bcc_file):
+    write('configurations/bcc_iron.xyz', atoms)
+    write('configurations/bcc_iron.lmp', atoms, format='lammps-data')
 
 # %%
 # create a neighbor list
