@@ -31,8 +31,8 @@ if not os.path.exists(bcc_file):
 # %%
 # create a neighbor list
 
-# atoms = read('fcc_iron.xyz')
-atoms = read('bcc_iron.xyz')
+atoms = read('configurations/fcc_iron.xyz')
+# atoms = read('configurations/bcc_iron.xyz')
 
 # Filter out non-iron atoms (for oxide structures later)
 symbols = atoms.get_chemical_symbols()
@@ -57,7 +57,7 @@ for i in range(3):
 
 # %%
 # compute the q6 order parameter for each atom
-l       = 6
+l       = 4
 m_vals  = np.arange(-l, l+1)              # m = -6 ... 6
 pref    = 4.0 * np.pi / (2*l + 1)         # 4π/13
 cell    = atoms.get_cell()                # for PBC shift
