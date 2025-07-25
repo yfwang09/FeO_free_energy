@@ -1,0 +1,45 @@
+# This script runs a MD simulation of bcc iron to determine its equilibrium lattice constant at finite temperature.
+
+
+#--------------------------- Simulation variables -----------------------------#
+  # Initalizes the random number generator.
+  variable         rnd equal round(random(0,999,${RANDOM}))
+
+  # Simulation control parameters.
+  variable         t_eq equal 5000 # Equilibration time.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  lattice          bcc 2.87
+  region           sim_box block 0 5 0 5 0 5
+  create_box       1 sim_box
+  create_atoms     1 box
+
+  # Define interatomic potential.
+  pair_style       tersoff/zbl
+  pair_coeff       * * ../../potential/Fe-O.tersoff.zbl Fe
+  mass             1 55.845    # Fe
+  # mass             2 15.9994   # O
+  neigh_modify     delay 0
+  timestep         0.002
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  # Integrator, Frenkel-Ladd modifier, and thermostat.
+  fix              1 all npt temp ${T} ${T} 0.2 iso 0.0 0.0 2.0
+
+  # Setup thermo output.
+  thermo           1
+  thermo_style     custom step temp pe etotal press pxx pyy pzz pxy pxz pyz lx ly lz vol
+
+  # Initial temperature to accelerate equilibration.
+  velocity         all create ${T} ${rnd} dist gaussian
+
+  # Forward integration.
+  run              ${t_eq}
+#------------------------------------------------------------------------------#
