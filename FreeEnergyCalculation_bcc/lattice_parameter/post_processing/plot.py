@@ -42,4 +42,6 @@ fig1, ax1 = plt.subplots()
 ax1.plot(Tlist, bsize, 'o-')
 print(bsize)
 
-plt.show()
+fig.savefig('simulation_process.png')
+fig1.savefig('lattice_parameter_result.png', dpi=300)
+plt.close()

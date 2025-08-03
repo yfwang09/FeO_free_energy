@@ -14,13 +14,13 @@
   units            metal
 
   # Create atoms.
-  lattice          bcc 2.87
+  lattice          fcc ${a}
   region           sim_box block 0 5 0 5 0 5
   create_box       1 sim_box
   create_atoms     1 box
 
   # Define interatomic potential.
-  pair_style       tersoff/zbl
+  pair_style       tersoff/zbl/gpu
   pair_coeff       * * ../../potential/Fe-O.tersoff.zbl Fe
   mass             1 55.845    # Fe
   # mass             2 15.9994   # O
@@ -31,11 +31,13 @@
 
 #----------------------------- Run simulation ---------------------------------#
   # Integrator, Frenkel-Ladd modifier, and thermostat.
-  fix              1 all npt temp ${T} ${T} 0.2 iso 0.0 0.0 2.0
+  fix              1 all nvt/gpu temp ${T} ${T} 0.2
+  group            Fe type 1
+  compute          msd_Fe Fe msd com yes
 
   # Setup thermo output.
   thermo           1
-  thermo_style     custom step temp pe etotal press pxx pyy pzz pxy pxz pyz lx ly lz vol
+  thermo_style     custom step temp pe etotal press pxx pyy pzz pxy pxz pyz lx ly lz vol c_msd_Fe[4]
 
   # Initial temperature to accelerate equilibration.
   velocity         all create ${T} ${rnd} dist gaussian

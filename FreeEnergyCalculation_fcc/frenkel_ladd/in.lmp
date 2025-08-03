@@ -1,0 +1,60 @@
+# This script runs a Frenkel-Ladd thermodynamic integration for the calculation of the free energy of bcc iron. See job.sh for the variables that need to be passed in the command line.
+
+
+#--------------------------- Simulation variables -----------------------------#
+  # Initalizes the random number generator.
+  variable         rnd equal round(random(0,999,${RANDOM}))
+
+  # Simulation control parameters.
+  variable         t_eq equal 1000 # Equilibration time.
+  variable         t equal 5000 # Switching time.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  lattice          fcc ${a}
+  region           sim_box block 0 5 0 5 0 5
+  create_box       1 sim_box
+  create_atoms     1 box
+
+  # Define interatomic potential.
+  pair_style       tersoff/zbl/gpu
+  pair_coeff       * * ../../potential/Fe-O.tersoff.zbl Fe # O
+  mass             1 55.845    # Fe
+  # mass             2 15.9994   # O
+  neigh_modify     delay 0
+  timestep         0.002
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  # Integrator, Frenkel-Ladd modifier, and thermostat.
+  fix              f1 all nve 
+  fix              f2 all ti/spring ${k} ${t} ${t_eq} function 2
+  fix              f3 all langevin ${T} ${T} 0.1 ${rnd} zero yes
+
+  # Setup thermo output.
+  thermo_style     custom step pe
+  thermo           0
+  variable         dE equal pe-f_f2
+  variable         lambda equal f_f2[1]
+
+  # Initial temperature to accelerate equilibration.
+  velocity         all create ${T} ${rnd} dist gaussian
+
+  # Forward integration.
+  run              ${t_eq}
+  fix              f4 all print 1 "${dE} ${lambda}" title "# dE [eV] lambda" &
+                   screen no file data/forward_${T}K.dat
+  run              ${t}
+  unfix            f4
+
+  # Backward integration. 
+  run              ${t_eq}
+  fix              f4 all print 1 "${dE} ${lambda}" title "# dE [eV] lambda" &
+                   screen no file data/backward_${T}K.dat
+  run              ${t}
+#------------------------------------------------------------------------------#

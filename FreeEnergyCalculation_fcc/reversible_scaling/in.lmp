@@ -1,0 +1,80 @@
+# This script runs a Reversible Scaling thermodynamic integration for the calculation of the temperature dependence of the free energy of bcc iron. See job.sh for the variables that need to be passed in the command line.
+
+
+#--------------------------- Simulation variables -----------------------------#
+  # Initalizes the random number generator.
+  variable         rnd equal round(random(0,999,${RANDOM}))
+
+  # Simulation control parameters.
+  variable         t_eq equal 1000 # Equilibration time.
+  variable         t equal 10000 # Switching time.
+  variable         T equal 100 # Simulation temperature.
+  variable         P equal 0 # Simulation pressure.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  lattice          fcc 3.65115
+  region           sim_box block 0 5 0 5 0 5
+  create_box       1 sim_box
+  create_atoms     1 box
+
+  # Define Interatomic potential.
+  mass             1 55.845    # Fe
+  # mass             2 15.9994   # O
+  neigh_modify     delay 0
+  timestep         0.002
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  # Setup thermo output.
+  thermo_style     custom step pe
+  thermo           0
+
+  # Integrator, barostat, and thermostat.
+  fix              f1 all npt temp ${T} ${T} 0.1 iso ${P} ${P} 1
+
+  # Initial temperature to accelerate equilibration.
+  velocity         all create ${T} ${rnd} dist gaussian
+
+  # Forward integration.
+  pair_style       tersoff/zbl
+  pair_coeff       * * ../../potential/Fe-O.tersoff.zbl Fe # O
+
+  run              ${t_eq}
+  
+  variable         lambda equal 1/(1+(elapsed/${t})*(1600/$T-1))
+  variable         mu     equal 1-v_lambda
+  pair_style       hybrid/scaled v_lambda tersoff/zbl v_mu zero 10.0 
+  pair_coeff       * * tersoff/zbl ../../potential/Fe-O.tersoff.zbl Fe # O
+  pair_coeff       * * zero
+
+  # fix              f2 all adapt 1 pair eam scale * * v_lambda
+  fix              f3 all print 1 "$(pe/atoms) ${lambda}" screen no &
+                   file data/forward.dat title "# pe lambda"
+  run              ${t}
+  # unfix            f2
+  unfix            f3
+
+  # Backward integration. 
+  pair_style       tersoff/zbl
+  pair_coeff       * * ../../potential/Fe-O.tersoff.zbl Fe # O
+
+  run              ${t_eq}
+  
+  variable         lambda equal 1/(1+(1-(elapsed/${t}))*(1600/$T-1))
+  variable         mu     equal 1-v_lambda
+  pair_style       hybrid/scaled v_lambda tersoff/zbl v_mu zero 10.0 
+  pair_coeff       * * tersoff/zbl ../../potential/Fe-O.tersoff.zbl Fe # O
+  pair_coeff       * * zero
+
+  # variable         lambda equal 1/(1+(1-(elapsed/${t}))*(1600/$T-1))
+  # fix              f2 all adapt 1 pair eam scale * * v_lambda
+  fix              f3 all print 1 "$(pe/atoms) ${lambda}" screen no &
+                   file data/backward.dat title "# pe lambda"
+  run              ${t}
+#------------------------------------------------------------------------------#
